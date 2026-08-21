@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A simple sail glyph on a mast, nodding to "Sailer" without reusing any UCursos branding. -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M54,26 L54,80" />
+    <path
+        android:fillColor="#F2A63A"
+        android:pathData="M54,30 L80,66 L54,66 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,38 L34,66 L54,66 Z" />
+    <path
+        android:fillColor="#083E4A"
+        android:pathData="M34,80 L74,80 L64,90 L44,90 Z" />
+</vector>
