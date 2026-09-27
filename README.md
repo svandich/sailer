@@ -97,7 +97,23 @@ app/src/main/java/cl/erz/sailer/
     SecureCredentialStore.kt  - Keystore-backed encrypted credential storage
     UCursosAuthenticator.kt   - drives the real login page through a WebView
     LoginResult.kt            - Success / InvalidCredentials / NetworkError / Unexpected
+  settings/
+    AppSettings.kt            - language/theme choices, applied natively and to the site
   ui/
     LoginActivity.kt          - native login form
-    MainActivity.kt           - hosts u-cursos.cl, auto-recovers on failure
+    MainActivity.kt           - hosts u-cursos.cl in a left-drawer shell, auto-recovers on failure
+    SettingsActivity.kt       - language/theme preferences (opened from the drawer)
 ```
+
+## Language and theme
+
+As in the original app, u-cursos.cl's own footer "Tema"/"Idioma" pickers are
+hidden (injected CSS on `#footer li.conf`) and replaced by a native
+**Ajustes** screen in the drawer. The choices are stored on the device (theme
+in the default SharedPreferences, language as AppCompat's per-app locale), so
+they survive logouts and relogins. After every logged-in page load,
+`MainActivity` compares them against the site's `kernel.theme` / `kernel.lang`
+and re-applies any mismatch through the site's own switch URLs
+(`?theme=<focus|focus-dark|classic|classic-dark>`,
+`?_hook=lang&lang=<es|en>`). This matters because each relogin wipes all
+cookies and starts a new server session, which resets both on the site.

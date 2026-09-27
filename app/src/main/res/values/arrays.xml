@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Values are u-cursos.cl's own theme/lang identifiers (see AppSettings). -->
+    <string-array name="theme_entries">
+        <item>@string/option_auto_theme</item>
+        <item>@string/theme_focus</item>
+        <item>@string/theme_focus_dark</item>
+        <item>@string/theme_classic</item>
+        <item>@string/theme_classic_dark</item>
+    </string-array>
+    <string-array name="theme_values" translatable="false">
+        <item>auto</item>
+        <item>focus</item>
+        <item>focus-dark</item>
+        <item>classic</item>
+        <item>classic-dark</item>
+    </string-array>
+
+    <!-- Language names are shown in their own language, like u-cursos.cl does. -->
+    <string-array name="language_entries">
+        <item>@string/option_auto_language</item>
+        <item>Español</item>
+        <item>English</item>
+    </string-array>
+    <string-array name="language_values" translatable="false">
+        <item>auto</item>
+        <item>es</item>
+        <item>en</item>
+    </string-array>
+</resources>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Sailer</string>
+    <string name="app_name" translatable="false">Sailer</string>
     <string name="login_subtitle">Inicia sesión con tu cuenta de U-Cursos</string>
 
     <string name="hint_username">Usuario o correo</string>
@@ -20,4 +20,19 @@
 
     <string name="offline_title">Sin conexión</string>
     <string name="offline_message">No pudimos conectar con U-Cursos, ni siquiera reintentando con tus credenciales guardadas. Revisa tu conexión a internet.</string>
+
+    <string name="drawer_open">Abrir menú</string>
+    <string name="drawer_close">Cerrar menú</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_settings">Ajustes</string>
+
+    <string name="settings_category_appearance">Apariencia</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_language">Idioma</string>
+    <string name="option_auto_theme">Automático (según el sistema)</string>
+    <string name="option_auto_language">Automático (idioma del sistema)</string>
+    <string name="theme_focus">Focus</string>
+    <string name="theme_focus_dark">Focus Oscuro</string>
+    <string name="theme_classic">Claro</string>
+    <string name="theme_classic_dark">Oscuro</string>
 </resources>

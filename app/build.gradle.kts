@@ -51,6 +51,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.activity:activity-ktx:1.9.1")
+    implementation("androidx.preference:preference-ktx:1.2.1")
 
     // Android Keystore-backed encryption for on-device credential storage.
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

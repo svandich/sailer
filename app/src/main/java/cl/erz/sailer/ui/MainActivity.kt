@@ -17,13 +17,18 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
+import cl.erz.sailer.R
 import cl.erz.sailer.auth.LoginResult
 import cl.erz.sailer.auth.SecureCredentialStore
 import cl.erz.sailer.auth.UCursosAuthenticator
 import cl.erz.sailer.databinding.ActivityMainBinding
+import cl.erz.sailer.settings.AppSettings
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -35,6 +40,12 @@ import kotlin.math.pow
  * successful login, with a few backed-off attempts, before giving up and
  * either showing an offline screen (network problem) or sending the user to
  * [LoginActivity] (the saved credentials themselves no longer work).
+ *
+ * Like the original app, navigation lives in a native left drawer, and the
+ * site's own footer theme/language pickers are hidden: those choices are made
+ * in [SettingsActivity] instead and pushed onto the site (see
+ * [syncSitePreferences]), since every relogin wipes the site's cookies and
+ * session - and with them, anything picked through the site itself.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -45,6 +56,10 @@ class MainActivity : AppCompatActivity() {
     private var isRecovering = false
     private var lastFailureWasNetwork = true
     private var loadingAnimation: Animator? = null
+
+    // Site preference changes ("lang=en", "theme=focus-dark") already requested
+    // from the site, so one it doesn't accept can't cause a reload loop.
+    private val sitePreferenceRequests = mutableSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +73,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        configureDrawer()
         configureWebView()
         binding.retryButton.setOnClickListener {
             recoveryAttempts = 0
@@ -66,10 +82,47 @@ class MainActivity : AppCompatActivity() {
         }
 
         onBackPressedDispatcher.addCallback(this) {
-            if (binding.webView.canGoBack()) binding.webView.goBack() else finish()
+            when {
+                binding.drawerLayout.isDrawerOpen(GravityCompat.START) ->
+                    binding.drawerLayout.closeDrawer(GravityCompat.START)
+                binding.webView.canGoBack() -> binding.webView.goBack()
+                else -> finish()
+            }
         }
 
         loadHome()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Coming back from SettingsActivity (or the system's per-app language
+        // screen): give changed preferences a fresh chance to reach the site.
+        if (::binding.isInitialized && binding.webView.visibility == View.VISIBLE) {
+            sitePreferenceRequests.clear()
+            syncSitePreferences()
+        }
+    }
+
+    private fun configureDrawer() {
+        setSupportActionBar(binding.toolbar)
+        val toggle = ActionBarDrawerToggle(
+            this, binding.drawerLayout, binding.toolbar,
+            R.string.drawer_open, R.string.drawer_close
+        )
+        binding.drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
+        binding.navigationView.getHeaderView(0)
+            .findViewById<android.widget.TextView>(R.id.drawerUsername)
+            .text = credentialStore.read()?.username
+        binding.navigationView.setNavigationItemSelectedListener { item ->
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            when (item.itemId) {
+                R.id.nav_home -> loadHome()
+                R.id.nav_settings -> startActivity(Intent(this, SettingsActivity::class.java))
+            }
+            true
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -82,16 +135,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun mainWebViewClient(): WebViewClient = object : WebViewClient() {
+        // A <style> added this early also applies to the footer once it's parsed.
+        override fun onPageCommitVisible(view: WebView, url: String) {
+            if (isUCursosUrl(url)) view.evaluateJavascript(HIDE_SITE_PREFERENCES_JS, null)
+        }
+
         override fun onPageFinished(view: WebView, url: String) {
             if (LOGIN_PATH in url) {
                 handleRecoverableFailure(networkRelated = false)
                 return
             }
-            if (Uri.parse(url).host?.endsWith(UCURSOS_HOST) != true) {
+            if (!isUCursosUrl(url)) {
                 recoveryAttempts = 0
                 showContent()
                 return
             }
+            view.evaluateJavascript(HIDE_SITE_PREFERENCES_JS, null)
             // An expired session doesn't always redirect to /login: u-cursos.cl's
             // root just renders the public (logged-out) frontpage instead. So
             // inspect the page itself before accepting it as a logged-in view.
@@ -104,6 +163,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     recoveryAttempts = 0
                     showContent()
+                    syncSitePreferences()
                 }
             }
         }
@@ -121,7 +181,63 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadHome() {
         showLoading()
+        // The theme is just a cookie, so it can be set up front, avoiding a
+        // reload through syncSitePreferences() (the language can't: it lives in
+        // the server-side session).
+        CookieManager.getInstance().setCookie(
+            HOME_URL, "theme=${AppSettings.siteTheme(this)}; path=/; max-age=$THEME_COOKIE_MAX_AGE_S"
+        )
         binding.webView.loadUrl(HOME_URL)
+    }
+
+    private fun isUCursosUrl(url: String): Boolean = Uri.parse(url).host?.endsWith(UCURSOS_HOST) == true
+
+    /**
+     * Makes the site's own theme/language (`kernel.theme` / `kernel.lang`)
+     * match [AppSettings], by navigating the current page to the site's own
+     * switch URLs - the same ones the hidden footer pickers link to. Changes
+     * one at a time; the reload lands back in onPageFinished, which calls this
+     * again for the next one.
+     */
+    private fun syncSitePreferences() {
+        val webView = binding.webView
+        val url = webView.url ?: return
+        if (isRecovering || !isUCursosUrl(url)) return
+        webView.evaluateJavascript(SITE_PREFERENCES_JS) { value ->
+            if (isRecovering || webView.url != url) return@evaluateJavascript
+            val current = value.trim('"').split('|')
+            if (current.size != 3) return@evaluateJavascript
+            val (siteLanguage, siteTheme, offersDefaultLanguage) = current
+            val language = AppSettings.siteLanguage(this)
+            val theme = AppSettings.siteTheme(this)
+
+            val base = Uri.parse(url).buildUpon()
+            val target = when {
+                siteLanguage != language && sitePreferenceRequests.add("lang=$language") ->
+                    base.appendQueryParameter("_hook", "lang").appendQueryParameter("lang", language)
+                siteTheme != theme && sitePreferenceRequests.add("theme=$theme") ->
+                    base.appendQueryParameter("theme", theme)
+                // Accept the site's offer to keep this language as the account
+                // default ("lang=!" = the session's current one) - once per
+                // choice, as the site offers it again after every switch.
+                siteLanguage == language && offersDefaultLanguage == "1" &&
+                    AppSettings.siteDefaultLanguage(this) != language &&
+                    sitePreferenceRequests.add("lang=!$language") -> {
+                    AppSettings.setSiteDefaultLanguage(this, language)
+                    base.appendQueryParameter("_hook", "lang").appendQueryParameter("lang", "!")
+                }
+                else -> {
+                    // Already saved: drop the now-pointless offer from the page.
+                    if (offersDefaultLanguage == "1") webView.evaluateJavascript(HIDE_DEFAULT_LANGUAGE_OFFER_JS, null)
+                    return@evaluateJavascript
+                }
+            }.build().toString()
+
+            showLoading()
+            // Navigate from inside the page rather than with loadUrl(): the
+            // language switch is only honored with a Referer, which this sends.
+            webView.evaluateJavascript("location.href = ${JSONObject.quote(target)};", null)
+        }
     }
 
     private fun handleRecoverableFailure(networkRelated: Boolean) {
@@ -152,7 +268,11 @@ class MainActivity : AppCompatActivity() {
             // anything else with the WebView.
             binding.webView.webViewClient = mainWebViewClient()
             when (result) {
-                is LoginResult.Success -> loadHome()
+                is LoginResult.Success -> {
+                    // A new session starts from the site's defaults again.
+                    sitePreferenceRequests.clear()
+                    loadHome()
+                }
                 is LoginResult.NetworkError -> handleRecoverableFailure(networkRelated = true)
                 is LoginResult.InvalidCredentials -> goToLogin(sessionExpired = true)
                 is LoginResult.Unexpected -> goToLogin(sessionExpired = true)
@@ -269,6 +389,32 @@ class MainActivity : AppCompatActivity() {
                 return hasLogin || document.querySelector('input[type=password]') !== null;
             })();
         """
+
+        // u-cursos.cl exposes its current settings on every page as a global
+        // `kernel` object. After a language switch the site also offers, in a
+        // #maviso banner, to make that language the account's default (a link
+        // to `?_hook=lang&lang=!`); the third field says whether it's showing.
+        private const val SITE_PREFERENCES_JS =
+            "(window.kernel ? kernel.lang + '|' + kernel.theme + '|' + " +
+                "(document.querySelector('#maviso a[href*=\"lang=!\"]') ? 1 : 0) : '')"
+        private const val HIDE_DEFAULT_LANGUAGE_OFFER_JS =
+            "(function() { var a = document.querySelector('#maviso a[href*=\"lang=!\"]');" +
+                " if (!a) return; var box = a.closest('#maviso'); a.closest('li').remove();" +
+                " if (!box.querySelector('li')) box.remove(); })();"
+        private const val THEME_COOKIE_MAX_AGE_S = 31_536_000 // one year, same as the site's
+
+        // The footer's "Tema" / "Idioma" pickers (li.conf.theme / li.conf.lang);
+        // SettingsActivity replaces them, as in the original app.
+        private const val HIDE_SITE_PREFERENCES_JS = """
+            (function() {
+                if (document.getElementById('sailer-style')) return;
+                var s = document.createElement('style');
+                s.id = 'sailer-style';
+                s.textContent = '#footer li.conf { display: none !important; }';
+                (document.head || document.documentElement).appendChild(s);
+            })();
+        """
+
         private const val MAX_RECOVERY_ATTEMPTS = 3
         private const val INITIAL_BACKOFF_MS = 1_500L
         private const val MAX_BACKOFF_MS = 10_000L
