@@ -16,6 +16,8 @@
     <string name="session_expired_message">Tu sesión expiró o la contraseña guardada ya no es válida. Vuelve a iniciar sesión</string>
     <string name="credentials_storage_notice">Tu usuario y contraseña se guardan cifrados en este dispositivo, para poder reintentar el inicio de sesión automáticamente si la red falla o tu sesión expira.</string>
 
+    <string name="loading_message">Navegando hacia U-Cursos…</string>
+
     <string name="offline_title">Sin conexión</string>
     <string name="offline_message">No pudimos conectar con U-Cursos, ni siquiera reintentando con tus credenciales guardadas. Revisa tu conexión a internet.</string>
 </resources>

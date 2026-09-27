@@ -1,9 +1,15 @@
 package cl.erz.sailer.ui
 
+import android.animation.Animator
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.view.animation.LinearInterpolator
 import android.webkit.CookieManager
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -38,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private var recoveryAttempts = 0
     private var isRecovering = false
     private var lastFailureWasNetwork = true
+    private var loadingAnimation: Animator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,9 +85,26 @@ class MainActivity : AppCompatActivity() {
         override fun onPageFinished(view: WebView, url: String) {
             if (LOGIN_PATH in url) {
                 handleRecoverableFailure(networkRelated = false)
-            } else {
+                return
+            }
+            if (Uri.parse(url).host?.endsWith(UCURSOS_HOST) != true) {
                 recoveryAttempts = 0
                 showContent()
+                return
+            }
+            // An expired session doesn't always redirect to /login: u-cursos.cl's
+            // root just renders the public (logged-out) frontpage instead. So
+            // inspect the page itself before accepting it as a logged-in view.
+            view.evaluateJavascript(LOGGED_OUT_CHECK_JS) { value ->
+                // Ignore stale results from a page we've since navigated away
+                // from, or that arrive while a recovery login is in progress.
+                if (isRecovering || view.url != url) return@evaluateJavascript
+                if (value == "true") {
+                    handleRecoverableFailure(networkRelated = false)
+                } else {
+                    recoveryAttempts = 0
+                    showContent()
+                }
             }
         }
 
@@ -150,19 +174,70 @@ class MainActivity : AppCompatActivity() {
         finish()
     }
 
+    // The WebView is kept hidden (INVISIBLE, not GONE, so it stays laid out and
+    // UCursosAuthenticator can still drive it) until a page is confirmed to be
+    // a logged-in view, so the logged-out frontpage and the relogin flow never
+    // flash on screen.
     private fun showLoading() {
+        binding.webView.visibility = View.INVISIBLE
         binding.loadingIndicator.visibility = View.VISIBLE
         binding.offlineContainer.visibility = View.GONE
+        startLoadingAnimation()
     }
 
     private fun showContent() {
+        stopLoadingAnimation()
         binding.loadingIndicator.visibility = View.GONE
         binding.offlineContainer.visibility = View.GONE
+        binding.webView.visibility = View.VISIBLE
     }
 
     private fun showOffline() {
+        stopLoadingAnimation()
         binding.loadingIndicator.visibility = View.GONE
         binding.offlineContainer.visibility = View.VISIBLE
+    }
+
+    // A sailboat rocking and bobbing on a strip of waves that scrolls sideways.
+    private fun startLoadingAnimation() {
+        if (loadingAnimation != null) return
+        val boat = binding.loadingBoat
+        val waves = binding.loadingWaves
+        val density = resources.displayMetrics.density
+        boat.post {
+            boat.pivotX = boat.width / 2f
+            boat.pivotY = boat.height.toFloat()
+        }
+
+        fun ObjectAnimator.swing(durationMs: Long) = apply {
+            duration = durationMs
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+        }
+
+        val rock = ObjectAnimator.ofFloat(boat, View.ROTATION, -BOAT_ROCK_DEGREES, BOAT_ROCK_DEGREES).swing(1_400L)
+        val bob = ObjectAnimator.ofFloat(boat, View.TRANSLATION_Y, 0f, BOAT_BOB_DP * density).swing(900L)
+        // Scrolling by exactly one wave period (see loading_waves.xml) loops seamlessly.
+        val sail = ObjectAnimator.ofFloat(waves, View.TRANSLATION_X, 0f, -WAVE_PERIOD_DP * density).apply {
+            duration = 1_200L
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = LinearInterpolator()
+        }
+
+        loadingAnimation = AnimatorSet().apply {
+            playTogether(rock, bob, sail)
+            start()
+        }
+    }
+
+    private fun stopLoadingAnimation() {
+        loadingAnimation?.cancel()
+        loadingAnimation = null
+    }
+
+    override fun onDestroy() {
+        stopLoadingAnimation()
+        super.onDestroy()
     }
 
     private fun hideOffline() {
@@ -172,8 +247,34 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val HOME_URL = "https://www.u-cursos.cl/"
         private const val LOGIN_PATH = "/login"
+        private const val UCURSOS_HOST = "u-cursos.cl"
+
+        // Logged-out heuristic: the page offers a way to log in (a link/form
+        // pointing at /login or the Cuenta Uchile auth endpoint, or a password
+        // field) and no way to log out.
+        // Requiring the absence of a logout link keeps logged-in pages that
+        // happen to mention /login from being misdetected.
+        private const val LOGGED_OUT_CHECK_JS = """
+            (function() {
+                var els = document.querySelectorAll('a[href], form[action]');
+                var hasLogin = false, hasLogout = false;
+                for (var i = 0; i < els.length; i++) {
+                    var t = (els[i].getAttribute('href') || els[i].getAttribute('action') || '').toLowerCase();
+                    if (t.indexOf('logout') >= 0 || t.indexOf('/salir') >= 0) hasLogout = true;
+                    // The logged-out frontpage's "Entrar con Cuenta Uchile"
+                    // button is a form posting to /b/auth/api.
+                    else if (t.indexOf('/login') >= 0 || t.indexOf('/auth/api') >= 0) hasLogin = true;
+                }
+                if (hasLogout) return false;
+                return hasLogin || document.querySelector('input[type=password]') !== null;
+            })();
+        """
         private const val MAX_RECOVERY_ATTEMPTS = 3
         private const val INITIAL_BACKOFF_MS = 1_500L
         private const val MAX_BACKOFF_MS = 10_000L
+
+        private const val BOAT_ROCK_DEGREES = 8f
+        private const val BOAT_BOB_DP = 4f
+        private const val WAVE_PERIOD_DP = 40f
     }
 }

@@ -8,12 +8,48 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <ProgressBar
+    <LinearLayout
         android:id="@+id/loadingIndicator"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone" />
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:layout_width="160dp"
+            android:layout_height="96dp"
+            android:clipChildren="true">
+
+            <ImageView
+                android:id="@+id/loadingBoat"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="10dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/loading_boat" />
+
+            <ImageView
+                android:id="@+id/loadingWaves"
+                android:layout_width="320dp"
+                android:layout_height="24dp"
+                android:layout_gravity="bottom|start"
+                android:importantForAccessibility="no"
+                android:scaleType="fitXY"
+                android:src="@drawable/loading_waves" />
+
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/loading_message"
+            android:textColor="@color/colorPrimary" />
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/offlineContainer"

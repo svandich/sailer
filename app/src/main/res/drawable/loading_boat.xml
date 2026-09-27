@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same sail-on-a-mast motif as the launcher icon, in theme colors so it reads on both light and dark backgrounds. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:strokeColor="@color/colorPrimaryDark"
+        android:strokeWidth="2"
+        android:pathData="M32,6 L32,48" />
+    <path
+        android:fillColor="@color/colorAccent"
+        android:pathData="M32,8 L52,42 L32,42 Z" />
+    <path
+        android:fillColor="@color/colorPrimary"
+        android:pathData="M32,16 L16,42 L32,42 Z" />
+    <path
+        android:fillColor="@color/colorPrimaryDark"
+        android:pathData="M10,46 L54,46 L46,56 L18,56 Z" />
+</vector>

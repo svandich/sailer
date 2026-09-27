@@ -35,8 +35,9 @@ reverse-engineering an undocumented API) but drives it programmatically:
    `auth/SecureCredentialStore.kt`, and the site's session cookie (set by
    u-cursos.cl itself) takes over for normal browsing in `MainActivity`.
 4. On a later launch, `MainActivity` loads u-cursos.cl directly using the
-   persisted session cookie. If that fails — network error, HTTP 5xx, or a
-   redirect back to `/login` (expired session) — it automatically retries by
+   persisted session cookie. If that fails — network error, HTTP 5xx, a
+   redirect back to `/login`, or u-cursos.cl rendering its public logged-out
+   frontpage (both mean an expired session) — it automatically retries by
    replaying the saved credentials through step 2, with a few backed-off
    attempts. If that still doesn't get past `/login`, the saved credentials
    are treated as no longer valid and the user is sent back to the native
