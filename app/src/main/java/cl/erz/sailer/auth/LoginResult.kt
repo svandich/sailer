@@ -1,4 +1,4 @@
-package com.sailer.app.auth
+package cl.erz.sailer.auth
 
 sealed class LoginResult {
     /** The login form was submitted and the page navigated away from /login. */

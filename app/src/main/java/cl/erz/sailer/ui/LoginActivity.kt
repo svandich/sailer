@@ -1,14 +1,14 @@
-package com.sailer.app.ui
+package cl.erz.sailer.ui
 
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.sailer.app.R
-import com.sailer.app.auth.LoginResult
-import com.sailer.app.auth.SecureCredentialStore
-import com.sailer.app.auth.UCursosAuthenticator
-import com.sailer.app.databinding.ActivityLoginBinding
+import cl.erz.sailer.R
+import cl.erz.sailer.auth.LoginResult
+import cl.erz.sailer.auth.SecureCredentialStore
+import cl.erz.sailer.auth.UCursosAuthenticator
+import cl.erz.sailer.databinding.ActivityLoginBinding
 import kotlinx.coroutines.launch
 
 /**

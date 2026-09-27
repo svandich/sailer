@@ -1,4 +1,4 @@
-package com.sailer.app
+package cl.erz.sailer
 
 import android.app.Application
 import android.webkit.WebView

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.sailer.app"
+    namespace = "cl.erz.sailer"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.sailer.app"
+        applicationId = "cl.erz.sailer"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

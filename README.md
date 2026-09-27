@@ -90,7 +90,7 @@ you're used to the older two-plugin setup.
 ## Project layout
 
 ```
-app/src/main/java/com/sailer/app/
+app/src/main/java/cl/erz/sailer/
   SailerApplication.kt        - enables WebView debugging in debug builds
   auth/
     SecureCredentialStore.kt  - Keystore-backed encrypted credential storage

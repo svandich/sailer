@@ -1,4 +1,4 @@
-package com.sailer.app.auth
+package cl.erz.sailer.auth
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences

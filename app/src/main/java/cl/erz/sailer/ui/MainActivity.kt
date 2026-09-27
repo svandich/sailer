@@ -1,4 +1,4 @@
-package com.sailer.app.ui
+package cl.erz.sailer.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -13,10 +13,10 @@ import android.webkit.WebViewClient
 import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.sailer.app.auth.LoginResult
-import com.sailer.app.auth.SecureCredentialStore
-import com.sailer.app.auth.UCursosAuthenticator
-import com.sailer.app.databinding.ActivityMainBinding
+import cl.erz.sailer.auth.LoginResult
+import cl.erz.sailer.auth.SecureCredentialStore
+import cl.erz.sailer.auth.UCursosAuthenticator
+import cl.erz.sailer.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.pow
