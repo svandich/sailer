@@ -3,6 +3,13 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- For u-cursos.cl pages that use the camera, like attendance QR scanning
+         (MainActivity grants it to the WebView). Optional, so devices
+         without a camera can still install the app. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
 
     <application
         android:name=".SailerApplication"
@@ -35,6 +42,12 @@
 
         <activity
             android:name=".ui.SettingsActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:theme="@style/Theme.Sailer" />
+
+        <activity
+            android:name=".ui.AboutActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:theme="@style/Theme.Sailer" />

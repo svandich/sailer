@@ -4,29 +4,55 @@ import android.animation.Animator
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
+import android.util.TypedValue
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.TextView
 import android.view.animation.LinearInterpolator
 import android.webkit.CookieManager
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import cl.erz.sailer.R
 import cl.erz.sailer.auth.LoginResult
 import cl.erz.sailer.auth.SecureCredentialStore
 import cl.erz.sailer.auth.UCursosAuthenticator
 import cl.erz.sailer.databinding.ActivityMainBinding
 import cl.erz.sailer.settings.AppSettings
+import cl.erz.sailer.site.SiteIcons
+import cl.erz.sailer.site.SiteMenu
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import kotlin.math.min
@@ -41,11 +67,14 @@ import kotlin.math.pow
  * either showing an offline screen (network problem) or sending the user to
  * [LoginActivity] (the saved credentials themselves no longer work).
  *
- * Like the original app, navigation lives in a native left drawer, and the
- * site's own footer theme/language pickers are hidden: those choices are made
- * in [SettingsActivity] instead and pushed onto the site (see
- * [syncSitePreferences]), since every relogin wipes the site's cookies and
- * session - and with them, anything picked through the site itself.
+ * Like the original app, navigation lives in a native left drawer: the site's
+ * own top bar, side menu and footer are hidden ([HIDE_SITE_CHROME_JS]) and the
+ * drawer is rebuilt from that side menu ([SiteMenu], [renderDrawer]) with the
+ * site's own icons. The footer's theme/language pickers are replaced by
+ * [SettingsActivity], whose choices are pushed onto the site (see
+ * [syncSitePreferences]) since every relogin wipes the site's cookies and
+ * session - and with them, anything picked through the site itself - and its
+ * links by [AboutActivity].
  */
 class MainActivity : AppCompatActivity() {
 
@@ -60,6 +89,14 @@ class MainActivity : AppCompatActivity() {
     // Site preference changes ("lang=en", "theme=focus-dark") already requested
     // from the site, so one it doesn't accept can't cause a reload loop.
     private val sitePreferenceRequests = mutableSetOf<String>()
+
+    // The SiteMenu JSON the drawer currently shows, and the job loading its icons.
+    private var drawerMenuJson: String? = null
+    private var drawerIconsJob: Job? = null
+
+    // Set once the user confirms "Salir": the next page load (the site's own
+    // logout) ends in LoginActivity instead of triggering an automatic relogin.
+    private var isLoggingOut = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,6 +140,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // A site page picked elsewhere in the app (AboutActivity's links).
+        intent.getStringExtra(EXTRA_URL)?.let { if (::binding.isInitialized) openSiteUrl(it) }
+    }
+
     private fun configureDrawer() {
         setSupportActionBar(binding.toolbar)
         val toggle = ActionBarDrawerToggle(
@@ -112,18 +155,273 @@ class MainActivity : AppCompatActivity() {
         binding.drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
-        binding.navigationView.getHeaderView(0)
-            .findViewById<android.widget.TextView>(R.id.drawerUsername)
-            .text = credentialStore.read()?.username
+        // The site's icons keep their own colors; glyphs and the app's own
+        // icons are tinted individually instead.
+        binding.navigationView.itemIconTintList = null
+        // Room for rowTitle()'s second line.
+        binding.navigationView.itemMaxLines = 2
         binding.navigationView.setNavigationItemSelectedListener { item ->
             binding.drawerLayout.closeDrawer(GravityCompat.START)
-            when (item.itemId) {
-                R.id.nav_home -> loadHome()
-                R.id.nav_settings -> startActivity(Intent(this, SettingsActivity::class.java))
+            drawerActions[item.itemId]?.invoke()
+            item.isCheckable
+        }
+        // Until the first page tells us otherwise, show the menu seen last time.
+        drawerMenuJson = SiteMenu.readCache(this)
+        renderDrawer(drawerMenuJson?.let(SiteMenu::parse))
+    }
+
+    private val drawerActions = mutableMapOf<Int, () -> Unit>()
+
+    /** A menu extracted from the current page (see [SiteMenu.EXTRACT_JS]). */
+    private fun onSiteMenu(json: String) {
+        if (json == drawerMenuJson || isLoggingOut) return
+        val site = SiteMenu.parse(json) ?: return
+        drawerMenuJson = json
+        SiteMenu.writeCache(this, json)
+        renderDrawer(site)
+    }
+
+    /**
+     * Rebuilds the drawer: Inicio and the site's search/share/reload, then the
+     * site's own lists (Favoritos, the current semester's courses,
+     * Comunidades, Instituciones), then Contacto, Ajustes, Acerca and Salir.
+     * Without a [site] menu yet, just the app's own rows.
+     */
+    private fun renderDrawer(site: SiteMenu?) {
+        val menu = binding.navigationView.menu
+        menu.clear()
+        drawerActions.clear()
+        drawerIconsJob?.cancel()
+        val pendingIcons = mutableListOf<Pair<MenuItem, SiteMenu.Row>>()
+        var nextId = 1
+
+        fun add(to: Menu, group: Int, title: CharSequence, @androidx.annotation.DrawableRes icon: Int, action: () -> Unit): MenuItem {
+            val id = nextId++
+            drawerActions[id] = action
+            return to.add(group, id, Menu.NONE, title).apply { if (icon != 0) setIcon(icon) }
+        }
+
+        fun addRow(to: Menu, group: Int, row: SiteMenu.Row, @androidx.annotation.DrawableRes fallbackIcon: Int = 0, action: () -> Unit): MenuItem =
+            add(to, group, rowTitle(row), fallbackIcon, action).also { item ->
+                if (row.icon != null) {
+                    // Hold the icon's space so rows don't shift once it loads.
+                    if (item.icon == null) item.icon = android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
+                    pendingIcons += item to row
+                }
             }
-            true
+
+        val actions = site?.actions.orEmpty()
+        fun action(kind: String) = actions.firstOrNull { it.kind == kind }
+
+        add(menu, GROUP_TOP, getString(R.string.nav_home), R.drawable.ic_home) { loadHome() }
+        action(SiteMenu.KIND_SEARCH)?.let { row -> addRow(menu, GROUP_TOP, row, R.drawable.ic_search) { showSearch(row) } }
+        action(SiteMenu.KIND_SHARE)?.let { row -> addRow(menu, GROUP_TOP, row) { shareCurrentPage() } }
+        action(SiteMenu.KIND_RELOAD)?.let { row -> addRow(menu, GROUP_TOP, row) { binding.webView.reload() } }
+
+        var selected: MenuItem? = null
+        for (section in site?.sections.orEmpty()) {
+            val subMenu = menu.addSubMenu(section.title)
+            for (row in section.rows) {
+                val item = addRow(subMenu, Menu.NONE, row) { row.href?.let(::openSiteUrl) }
+                item.isCheckable = true
+                if (row.isSelected) selected = item
+            }
+        }
+
+        actions.filter { it.kind == SiteMenu.KIND_LINK }.forEach { row ->
+            addRow(menu, GROUP_BOTTOM, row) { row.href?.let(::openSiteUrl) }
+        }
+        add(menu, GROUP_BOTTOM, getString(R.string.nav_settings), R.drawable.ic_settings) {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        add(menu, GROUP_BOTTOM, getString(R.string.nav_about), R.drawable.ic_about) {
+            startActivity(Intent(this, AboutActivity::class.java))
+        }
+        val logout = action(SiteMenu.KIND_LOGOUT)
+        if (logout != null) {
+            addRow(menu, GROUP_BOTTOM, logout, R.drawable.ic_logout) { confirmLogout(logout.href) }
+        } else {
+            add(menu, GROUP_BOTTOM, getString(R.string.nav_logout), R.drawable.ic_logout) { confirmLogout(null) }
+        }
+        selected?.let { binding.navigationView.setCheckedItem(it) }
+
+        val header = binding.navigationView.getHeaderView(0)
+        val user = site?.user
+        val avatar = header.findViewById<ImageView>(R.id.drawerAvatar)
+        header.findViewById<TextView>(R.id.drawerName).text = user?.name ?: getString(R.string.app_name)
+        header.findViewById<TextView>(R.id.drawerUsername).text = credentialStore.read()?.username
+        if (user != null) {
+            header.setOnClickListener {
+                binding.drawerLayout.closeDrawer(GravityCompat.START)
+                openSiteUrl(user.href)
+            }
+        } else {
+            header.setOnClickListener(null)
+            header.isClickable = false
+        }
+        if (user?.avatar == null) avatar.visibility = View.GONE
+
+        val iconSize = dp(ICON_SIZE_DP)
+        val glyphTint = themeColor(androidx.appcompat.R.attr.colorControlNormal)
+        drawerIconsJob = lifecycleScope.launch {
+            for ((item, row) in pendingIcons) launch {
+                val bitmap = SiteIcons.load(this@MainActivity, row.icon ?: return@launch, iconSize) ?: return@launch
+                item.icon = BitmapDrawable(resources, bitmap).apply { if (row.isGlyph) setTintList(glyphTint) }
+            }
+            user?.avatar?.let { url ->
+                launch {
+                    val bitmap = SiteIcons.load(this@MainActivity, url, dp(AVATAR_SIZE_DP)) ?: return@launch
+                    avatar.setImageDrawable(RoundedBitmapDrawableFactory.create(resources, bitmap).apply { isCircular = true })
+                    avatar.visibility = View.VISIBLE
+                }
+            }
         }
     }
+
+    // A row's label, plus its secondary line (course code, community year)
+    // smaller and dimmed below it, as the site shows them.
+    private fun rowTitle(row: SiteMenu.Row): CharSequence {
+        if (row.sub.isEmpty()) return row.label
+        return SpannableStringBuilder(row.label).append("\n").apply {
+            val start = length
+            append(row.sub)
+            setSpan(RelativeSizeSpan(0.85f), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            themeColor(android.R.attr.textColorSecondary)?.let {
+                setSpan(ForegroundColorSpan(it.defaultColor), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+        }
+    }
+
+    private fun openSiteUrl(url: String) {
+        if (isUCursosUrl(url)) binding.webView.loadUrl(url)
+    }
+
+    // The site's search box (#widget_buscador), as a dialog.
+    private fun showSearch(row: SiteMenu.Row) {
+        val action = row.href ?: return
+        val input = EditText(this).apply {
+            hint = row.hint
+            isSingleLine = true
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+        }
+        val container = android.widget.FrameLayout(this).apply {
+            setPadding(dp(24), dp(8), dp(24), 0)
+            addView(input)
+        }
+        fun search() {
+            val query = input.text.toString().trim()
+            if (query.isNotEmpty()) {
+                openSiteUrl(Uri.parse(action).buildUpon().appendQueryParameter("q", query).build().toString())
+            }
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(row.label)
+            .setView(container)
+            .setPositiveButton(row.label) { _, _ -> search() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+        input.setOnEditorActionListener { _, actionId, event ->
+            // The keyboard's search key, or Enter on a hardware keyboard.
+            val isEnter = event?.keyCode == android.view.KeyEvent.KEYCODE_ENTER &&
+                event.action == android.view.KeyEvent.ACTION_DOWN
+            if (actionId != EditorInfo.IME_ACTION_SEARCH && !isEnter) return@setOnEditorActionListener false
+            search()
+            dialog.dismiss()
+            true
+        }
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        dialog.show()
+        input.requestFocus()
+    }
+
+    // The site's "Compartir" link is the current page's permalink.
+    private fun shareCurrentPage() {
+        val url = binding.webView.url ?: return
+        val send = Intent(Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT, url)
+            .putExtra(Intent.EXTRA_SUBJECT, binding.webView.title)
+        startActivity(Intent.createChooser(send, getString(R.string.share_chooser_title)))
+    }
+
+    private fun confirmLogout(siteLogoutUrl: String?) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.logout_confirm_title)
+            .setMessage(R.string.logout_confirm_message)
+            .setPositiveButton(R.string.nav_logout) { _, _ -> logout(siteLogoutUrl) }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * Unlike an expired session, this must not be recovered from: forget the
+     * saved credentials first, then end the session on the site too (its
+     * logout link carries a CSRF token). AppSettings are kept, as always.
+     */
+    private fun logout(siteLogoutUrl: String?) {
+        logoutUsername = credentialStore.read()?.username
+        credentialStore.clear()
+        SiteMenu.clearCache(this)
+        SiteIcons.clearDiskCache(this)
+        if (siteLogoutUrl == null || !isUCursosUrl(siteLogoutUrl)) {
+            finishLogout()
+            return
+        }
+        isLoggingOut = true
+        showLoading()
+        binding.webView.loadUrl(siteLogoutUrl)
+    }
+
+    private var logoutUsername: String? = null
+
+    // A page's camera request (see pageChromeClient) waiting on the system's
+    // camera permission dialog.
+    private var pendingCameraRequest: PermissionRequest? = null
+    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val request = pendingCameraRequest ?: return@registerForActivityResult
+        pendingCameraRequest = null
+        if (granted) request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) else request.deny()
+    }
+
+    /**
+     * Lets u-cursos.cl pages use the camera through the web camera API, as the
+     * attendance page's QR scanner does (asistencias2/attendance_take). Only
+     * video is ever granted, and only to the site itself; the app's own camera
+     * permission is asked for the first time a page needs it.
+     */
+    private val pageChromeClient = object : WebChromeClient() {
+        override fun onPermissionRequest(request: PermissionRequest) {
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE !in request.resources || !isUCursosUrl(request.origin.toString())) {
+                request.deny()
+                return
+            }
+            if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+            } else {
+                pendingCameraRequest?.deny()
+                pendingCameraRequest = request
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+
+        override fun onPermissionRequestCanceled(request: PermissionRequest) {
+            if (pendingCameraRequest == request) pendingCameraRequest = null
+        }
+    }
+
+    private fun finishLogout() {
+        CookieManager.getInstance().removeAllCookies(null)
+        goToLogin(sessionExpired = false, username = logoutUsername)
+    }
+
+    private fun themeColor(attr: Int): android.content.res.ColorStateList? {
+        val value = TypedValue()
+        if (!theme.resolveAttribute(attr, value, true)) return null
+        return if (value.resourceId != 0) ContextCompat.getColorStateList(this, value.resourceId)
+        else android.content.res.ColorStateList.valueOf(value.data)
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configureWebView() {
@@ -132,15 +430,34 @@ class MainActivity : AppCompatActivity() {
         webView.settings.domStorageEnabled = true
         CookieManager.getInstance().setAcceptCookie(true)
         webView.webViewClient = mainWebViewClient()
+        webView.webChromeClient = pageChromeClient
+
+        // Hiding the site's chrome before the page is even parsed avoids a flash
+        // of it on every navigation; onPageCommitVisible/onPageFinished repeat
+        // it for WebViews without document-start scripts.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            WebViewCompat.addDocumentStartJavaScript(webView, HIDE_SITE_CHROME_JS, SITE_ORIGINS)
+        }
+        // Receives SiteMenu.EXTRACT_JS's result; only u-cursos.cl pages get the
+        // `sailerBridge` object at all.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            WebViewCompat.addWebMessageListener(webView, "sailerBridge", SITE_ORIGINS) { _, message, _, isMainFrame, _ ->
+                if (isMainFrame) message.data?.let(::onSiteMenu)
+            }
+        }
     }
 
     private fun mainWebViewClient(): WebViewClient = object : WebViewClient() {
-        // A <style> added this early also applies to the footer once it's parsed.
+        // A <style> added this early also applies to the rest of the page as it's parsed.
         override fun onPageCommitVisible(view: WebView, url: String) {
-            if (isUCursosUrl(url)) view.evaluateJavascript(HIDE_SITE_PREFERENCES_JS, null)
+            if (isUCursosUrl(url)) view.evaluateJavascript(HIDE_SITE_CHROME_JS, null)
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            if (isLoggingOut) {
+                finishLogout()
+                return
+            }
             if (LOGIN_PATH in url) {
                 handleRecoverableFailure(networkRelated = false)
                 return
@@ -150,7 +467,7 @@ class MainActivity : AppCompatActivity() {
                 showContent()
                 return
             }
-            view.evaluateJavascript(HIDE_SITE_PREFERENCES_JS, null)
+            view.evaluateJavascript(HIDE_SITE_CHROME_JS, null)
             // An expired session doesn't always redirect to /login: u-cursos.cl's
             // root just renders the public (logged-out) frontpage instead. So
             // inspect the page itself before accepting it as a logged-in view.
@@ -164,12 +481,14 @@ class MainActivity : AppCompatActivity() {
                     recoveryAttempts = 0
                     showContent()
                     syncSitePreferences()
+                    view.evaluateJavascript(SiteMenu.EXTRACT_JS, null)
                 }
             }
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-            if (request.isForMainFrame) handleRecoverableFailure(networkRelated = true)
+            if (request.isForMainFrame && isLoggingOut) finishLogout()
+            else if (request.isForMainFrame) handleRecoverableFailure(networkRelated = true)
         }
 
         override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
@@ -241,7 +560,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleRecoverableFailure(networkRelated: Boolean) {
-        if (isRecovering) return
+        if (isRecovering || isLoggingOut) return
         lastFailureWasNetwork = networkRelated
 
         if (recoveryAttempts >= MAX_RECOVERY_ATTEMPTS) {
@@ -283,8 +602,7 @@ class MainActivity : AppCompatActivity() {
     private fun backoffDelayMs(attempt: Int): Long =
         (INITIAL_BACKOFF_MS * 2.0.pow(attempt - 1)).toLong().let { min(it, MAX_BACKOFF_MS) }
 
-    private fun goToLogin(sessionExpired: Boolean) {
-        val username = credentialStore.read()?.username
+    private fun goToLogin(sessionExpired: Boolean, username: String? = credentialStore.read()?.username) {
         startActivity(
             Intent(this, LoginActivity::class.java)
                 .putExtra(LoginActivity.EXTRA_SESSION_EXPIRED, sessionExpired)
@@ -403,17 +721,30 @@ class MainActivity : AppCompatActivity() {
                 " if (!box.querySelector('li')) box.remove(); })();"
         private const val THEME_COOKIE_MAX_AGE_S = 31_536_000 // one year, same as the site's
 
-        // The footer's "Tema" / "Idioma" pickers (li.conf.theme / li.conf.lang);
-        // SettingsActivity replaces them, as in the original app.
-        private const val HIDE_SITE_PREFERENCES_JS = """
+        const val EXTRA_URL = "extra_url"
+
+        private val SITE_ORIGINS = setOf("https://www.u-cursos.cl", "https://u-cursos.cl")
+
+        // The drawer replaces the site's red top bar (#header, with its #toggler
+        // hamburger), its side menu (#menu) and the blur it lays over the page
+        // while that menu is open (#navigation::after); AboutActivity and
+        // SettingsActivity replace its footer (#footer). The page's first block
+        // then no longer needs the margin that cleared the fixed top bar.
+        private const val HIDE_SITE_CHROME_JS = """
             (function() {
                 if (document.getElementById('sailer-style')) return;
                 var s = document.createElement('style');
                 s.id = 'sailer-style';
-                s.textContent = '#footer li.conf { display: none !important; }';
+                s.textContent = '#header, #toggler, #menu, #footer, #navigation::after { display: none !important; }' +
+                    ' #navigation-wrapper > :first-child { margin-top: 0 !important; }';
                 (document.head || document.documentElement).appendChild(s);
             })();
         """
+
+        private const val GROUP_TOP = 1
+        private const val GROUP_BOTTOM = 2
+        private const val ICON_SIZE_DP = 24
+        private const val AVATAR_SIZE_DP = 56
 
         private const val MAX_RECOVERY_ATTEMPTS = 3
         private const val INITIAL_BACKOFF_MS = 1_500L

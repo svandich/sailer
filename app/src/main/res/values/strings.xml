@@ -25,6 +25,18 @@
     <string name="drawer_close">Cerrar menú</string>
     <string name="nav_home">Inicio</string>
     <string name="nav_settings">Ajustes</string>
+    <string name="nav_about">Acerca</string>
+    <string name="nav_logout">Salir</string>
+    <string name="share_chooser_title">Compartir</string>
+    <string name="logout_confirm_title">¿Cerrar sesión?</string>
+    <string name="logout_confirm_message">Se borrarán el usuario y la contraseña guardados en este dispositivo. Tus ajustes se mantienen.</string>
+
+    <string name="about_version">Versión %1$s</string>
+    <string name="about_description">Cliente para Android de U-Cursos, de la Universidad de Chile.</string>
+    <string name="about_category_site" translatable="false">U-Cursos</string>
+    <string name="about_terms">Políticas de uso</string>
+    <string name="about_privacy">Privacidad</string>
+    <string name="about_accessibility">Accesibilidad</string>
 
     <string name="settings_category_appearance">Apariencia</string>
     <string name="settings_theme">Tema</string>
