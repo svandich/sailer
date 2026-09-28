@@ -1,17 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#0B5566</color>
-    <color name="colorPrimaryDark">#083E4A</color>
-    <color name="colorAccent">#F2A63A</color>
+    <!-- Brand palette (DESIGN.md "Color"). Fixed in both modes; the roles below reference them. -->
+    <color name="abyss">#083E4A</color>
+    <color name="harbor">#0B5566</color>
+    <color name="lagoon">#3E8FA3</color>
+    <color name="foam">#A9D3DD</color>
+    <color name="mist">#E8F3F6</color>
+    <color name="sunsail">#F2A63A</color>
+    <color name="teak">#A45F00</color>
+    <color name="beacon">#D31E17</color>
+    <color name="kelp">#2BB673</color>
+    <color name="coral">#E5484D</color>
+
+    <!-- Semantic roles. -->
+    <color name="colorPrimary">@color/harbor</color>
+    <color name="colorPrimaryDark">@color/abyss</color>
+    <color name="colorAccent">@color/sunsail</color>
     <color name="background">#FFFFFF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="onSurface">#DE000000</color>
+    <color name="onSurfaceMuted">#8A000000</color>
+    <color name="accentText">#A45F00</color>
+    <color name="onAccent">#000000</color>
+    <color name="divider">#E3E3E3</color>
+    <color name="stripe">#08000000</color>
+    <color name="warnContainer">#FFF9D5</color>
+    <color name="onWarnContainer">#8A6D00</color>
+    <color name="now">@color/beacon</color>
     <color name="errorText">#C62828</color>
     <color name="bannerBackground">#FFF3CD</color>
     <color name="bannerText">#7A5B00</color>
+    <color name="logoJib">@color/lagoon</color>
+    <color name="logoHull">@color/harbor</color>
     <!-- AttendanceScannerActivity: always dark, over the camera. -->
     <color name="scannerScrim">#66000000</color>
     <color name="scannerSheet">#E6101416</color>
-    <color name="scannerOk">#2BB673</color>
-    <color name="scannerWrong">#E5484D</color>
-    <color name="scannerPending">#F2A63A</color>
+    <color name="scannerOk">@color/kelp</color>
+    <color name="scannerWrong">@color/coral</color>
+    <color name="scannerPending">@color/sunsail</color>
     <color name="scannerTextSecondary">#B3FFFFFF</color>
 </resources>

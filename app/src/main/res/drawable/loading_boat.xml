@@ -1,21 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Same sail-on-a-mast motif as the launcher icon, in theme colors so it reads on both light and dark backgrounds. -->
+<!-- Same logo as the launcher icon (DESIGN.md "Logo"); logoJib/logoHull switch to the on-dark variant at night. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="64dp"
     android:height="64dp"
     android:viewportWidth="64"
     android:viewportHeight="64">
     <path
-        android:strokeColor="@color/colorPrimaryDark"
-        android:strokeWidth="2"
-        android:pathData="M32,6 L32,48" />
+        android:fillColor="@color/sunsail"
+        android:pathData="M34,5C44,16 50,30 51,43H34Z" />
     <path
-        android:fillColor="@color/colorAccent"
-        android:pathData="M32,8 L52,42 L32,42 Z" />
+        android:fillColor="@color/logoJib"
+        android:pathData="M30,14C27,24 22,35 14,43H30Z" />
     <path
-        android:fillColor="@color/colorPrimary"
-        android:pathData="M32,16 L16,42 L32,42 Z" />
-    <path
-        android:fillColor="@color/colorPrimaryDark"
-        android:pathData="M10,46 L54,46 L46,56 L18,56 Z" />
+        android:fillColor="@color/logoHull"
+        android:pathData="M7,48H57C54,54 48,58 40,58H20C14,58 9,54 7,48Z" />
 </vector>

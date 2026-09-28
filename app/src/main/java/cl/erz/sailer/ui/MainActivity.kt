@@ -48,6 +48,7 @@ import cl.erz.sailer.R
 import cl.erz.sailer.auth.LoginResult
 import cl.erz.sailer.auth.SecureCredentialStore
 import cl.erz.sailer.auth.UCursosAuthenticator
+import cl.erz.sailer.calendar.CalendarRepository
 import cl.erz.sailer.databinding.ActivityMainBinding
 import cl.erz.sailer.settings.AppSettings
 import cl.erz.sailer.site.SiteIcons
@@ -142,8 +143,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // A site page picked elsewhere in the app (AboutActivity's links).
-        intent.getStringExtra(EXTRA_URL)?.let { if (::binding.isInitialized) openSiteUrl(it) }
+        // A site page picked elsewhere in the app (AboutActivity's links,
+        // CalendarActivity's pages without a native version).
+        val url = intent.getStringExtra(EXTRA_URL) ?: return
+        if (!::binding.isInitialized) return
+        if (intent.getBooleanExtra(EXTRA_IN_WEBVIEW, false) && isUCursosUrl(url)) binding.webView.loadUrl(url)
+        else openSiteUrl(url)
     }
 
     private fun configureDrawer() {
@@ -294,6 +299,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openSiteUrl(url: String) {
         if (AttendanceScannerActivity.isScannerUrl(url)) startActivity(AttendanceScannerActivity.intent(this, url))
+        else if (CalendarActivity.isCalendarUrl(url)) startActivity(CalendarActivity.intent(this, url))
         else if (isUCursosUrl(url)) binding.webView.loadUrl(url)
     }
 
@@ -364,6 +370,7 @@ class MainActivity : AppCompatActivity() {
         credentialStore.clear()
         SiteMenu.clearCache(this)
         SiteIcons.clearDiskCache(this)
+        CalendarRepository.clearCache(this)
         if (siteLogoutUrl == null || !isUCursosUrl(siteLogoutUrl)) {
             finishLogout()
             return
@@ -450,11 +457,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun mainWebViewClient(): WebViewClient = object : WebViewClient() {
         // The attendance page's "Comenzar!" opens the native QR scanner
-        // instead of the site's in-page one.
+        // instead of the site's in-page one, and calendar views (Horario, a
+        // course's Calendario) open natively too.
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url.toString()
-            if (!request.isForMainFrame || !AttendanceScannerActivity.isScannerUrl(url)) return false
-            startActivity(AttendanceScannerActivity.intent(this@MainActivity, url))
+            if (!request.isForMainFrame) return false
+            when {
+                AttendanceScannerActivity.isScannerUrl(url) -> startActivity(AttendanceScannerActivity.intent(this@MainActivity, url))
+                CalendarActivity.isCalendarUrl(url) -> startActivity(CalendarActivity.intent(this@MainActivity, url))
+                else -> return false
+            }
             return true
         }
 
@@ -732,6 +744,8 @@ class MainActivity : AppCompatActivity() {
         private const val THEME_COOKIE_MAX_AGE_S = 31_536_000 // one year, same as the site's
 
         const val EXTRA_URL = "extra_url"
+        // With EXTRA_URL: show it in the WebView even if it has a native screen.
+        const val EXTRA_IN_WEBVIEW = "extra_in_webview"
 
         private val SITE_ORIGINS = setOf("https://www.u-cursos.cl", "https://u-cursos.cl")
 

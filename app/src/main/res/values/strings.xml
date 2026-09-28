@@ -60,4 +60,38 @@
     <string name="scanner_no_permission">Para escanear los códigos QR de asistencia, Sailer necesita acceso a la cámara.</string>
     <string name="scanner_grant">Permitir cámara</string>
     <string name="scanner_no_camera">Este dispositivo no tiene una cámara disponible.</string>
+
+    <string name="calendar_title_personal">Horario</string>
+    <string name="calendar_title_course">Calendario</string>
+    <string name="calendar_mode_summary">Resumen</string>
+    <string name="calendar_mode_agenda">Agenda</string>
+    <string name="calendar_mode_day">Día</string>
+    <string name="calendar_mode_week">Semana</string>
+    <string name="calendar_mode_month">Mes</string>
+    <string name="calendar_previous">Anterior</string>
+    <string name="calendar_next">Siguiente</string>
+    <string name="calendar_today">Hoy</string>
+    <string name="calendar_show_past">Mostrar eventos pasados</string>
+    <string name="calendar_summary_title">Próximos eventos</string>
+    <string name="calendar_summary_legend">Se muestran sólo eventos agregados manualmente, dejando fuera horarios y feriados</string>
+    <string name="calendar_empty">No hay eventos en el calendario</string>
+    <string name="calendar_week_title">Semana %1$d · %2$s</string>
+    <string name="calendar_day_pattern">EEEE d \'de\' MMMM</string>
+    <plurals name="calendar_more">
+        <item quantity="one">+%d más</item>
+        <item quantity="many">+%d más</item>
+        <item quantity="other">+%d más</item>
+    </plurals>
+    <string name="calendar_kind_other">Otros Eventos</string>
+    <string name="calendar_kind_holiday">Feriado</string>
+    <string name="calendar_rooms">Sala: %1$s</string>
+    <string name="calendar_source">En %1$s</string>
+    <string name="calendar_course">Curso: %1$s</string>
+    <string name="calendar_open_course">Ir al curso</string>
+    <string name="calendar_open_event">Ver evento</string>
+    <string name="calendar_add_event">Agregar Evento</string>
+    <string name="calendar_reload">Recargar</string>
+    <string name="calendar_open_web">Ver en el sitio</string>
+    <string name="calendar_error_network">No se pudo cargar el calendario. Revisa tu conexión.</string>
+    <string name="calendar_error_session">No se pudo cargar el calendario: la sesión puede haber expirado.</string>
 </resources>

@@ -58,4 +58,37 @@
     <string name="scanner_no_permission">To scan attendance QR codes, Sailer needs access to the camera.</string>
     <string name="scanner_grant">Allow camera</string>
     <string name="scanner_no_camera">This device has no camera available.</string>
+
+    <string name="calendar_title_personal">Schedule</string>
+    <string name="calendar_title_course">Calendar</string>
+    <string name="calendar_mode_summary">Summary</string>
+    <string name="calendar_mode_agenda">Agenda</string>
+    <string name="calendar_mode_day">Day</string>
+    <string name="calendar_mode_week">Week</string>
+    <string name="calendar_mode_month">Month</string>
+    <string name="calendar_previous">Previous</string>
+    <string name="calendar_next">Next</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_show_past">Show past events</string>
+    <string name="calendar_summary_title">Upcoming events</string>
+    <string name="calendar_summary_legend">Only manually added events are shown, leaving out schedules and holidays</string>
+    <string name="calendar_empty">There are no events in the calendar</string>
+    <string name="calendar_week_title">Week %1$d · %2$s</string>
+    <string name="calendar_day_pattern">EEEE, MMMM d</string>
+    <plurals name="calendar_more">
+        <item quantity="one">+%d more</item>
+        <item quantity="other">+%d more</item>
+    </plurals>
+    <string name="calendar_kind_other">Other Events</string>
+    <string name="calendar_kind_holiday">Holiday</string>
+    <string name="calendar_rooms">Room: %1$s</string>
+    <string name="calendar_source">In %1$s</string>
+    <string name="calendar_course">Course: %1$s</string>
+    <string name="calendar_open_course">Go to course</string>
+    <string name="calendar_open_event">View event</string>
+    <string name="calendar_add_event">Add Event</string>
+    <string name="calendar_reload">Reload</string>
+    <string name="calendar_open_web">View on the site</string>
+    <string name="calendar_error_network">Couldn\'t load the calendar. Check your connection.</string>
+    <string name="calendar_error_session">Couldn\'t load the calendar: your session may have expired.</string>
 </resources>

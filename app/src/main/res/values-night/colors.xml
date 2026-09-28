@@ -1,10 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3E8FA3</color>
-    <color name="colorPrimaryDark">#0B5566</color>
-    <color name="colorAccent">#F2A63A</color>
+    <color name="colorPrimary">@color/lagoon</color>
+    <color name="colorPrimaryDark">@color/harbor</color>
+    <color name="colorAccent">@color/sunsail</color>
     <color name="background">#121212</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="onSurface">#FFFFFF</color>
+    <color name="onSurfaceMuted">#B3FFFFFF</color>
+    <color name="accentText">#F2A63A</color>
+    <color name="onAccent">#000000</color>
+    <color name="divider">#333333</color>
+    <color name="stripe">#0DFFFFFF</color>
+    <color name="warnContainer">#484417</color>
+    <color name="onWarnContainer">#D8C766</color>
+    <color name="now">@color/beacon</color>
     <color name="errorText">#EF9A9A</color>
     <color name="bannerBackground">#4A3B00</color>
     <color name="bannerText">#FFE082</color>
+    <color name="logoJib">#FFFFFF</color>
+    <color name="logoHull">@color/foam</color>
 </resources>

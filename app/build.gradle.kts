@@ -28,6 +28,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // java.time (CalendarActivity) below API 26.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     buildFeatures {
@@ -69,4 +71,6 @@ dependencies {
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
 }

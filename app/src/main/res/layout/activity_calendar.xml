@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.MaterialComponents.Toolbar.Primary"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:navigationIcon="@drawable/ic_arrow_back" />
+
+    <!-- The site's module tabs (ul.modulo): Resumen, Agenda, Día, Semana, Mes. -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabs"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="?attr/colorAccent"
+        app:tabMinWidth="0dp"
+        app:tabMode="fixed"
+        app:tabPaddingEnd="2dp"
+        app:tabPaddingStart="2dp"
+        app:tabSelectedTextColor="?attr/sailerAccentText"
+        app:tabTextAppearance="@style/TextAppearance.Sailer.Tab" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_gravity="top"
+            android:background="?android:attr/listDivider" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="invisible"
+            app:indicatorColor="?attr/colorAccent"
+            app:trackThickness="2dp" />
+    </FrameLayout>
+
+    <!-- The site's pager (ul.paginas): « period », plus "Hoy". -->
+    <LinearLayout
+        android:id="@+id/pager"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="4dp">
+
+        <ImageButton
+            android:id="@+id/previous"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/calendar_previous"
+            android:src="@drawable/ic_chevron_left" />
+
+        <TextView
+            android:id="@+id/period"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textAppearance="?attr/textAppearanceSubtitle1"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/next"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/calendar_next"
+            android:src="@drawable/ic_chevron_right" />
+
+        <ImageButton
+            android:id="@+id/today"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/calendar_today"
+            android:src="@drawable/ic_today" />
+    </LinearLayout>
+
+    <!-- The site's type filters (form.filtros). -->
+    <HorizontalScrollView
+        android:id="@+id/filtersScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/filters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="12dp"
+            app:chipSpacingHorizontal="6dp"
+            app:singleLine="true" />
+    </HorizontalScrollView>
+
+    <!-- Resumen's own filter. -->
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/showPast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:text="@string/calendar_show_past"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/gridScroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <cl.erz.sailer.ui.calendar.TimeGridView
+                android:id="@+id/timeGrid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </androidx.core.widget.NestedScrollView>
+
+        <cl.erz.sailer.ui.calendar.MonthGridView
+            android:id="@+id/monthGrid"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/errorBox"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/errorText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAppearance="?attr/textAppearanceBody1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/errorRetry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/action_retry" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/errorWeb"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/calendar_open_web" />
+        </LinearLayout>
+    </FrameLayout>
+
+</LinearLayout>

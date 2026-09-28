@@ -1,21 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Sailer logo, on-dark variant (DESIGN.md "Logo"): amber mainsail, white jib, foam hull; the gap between the sails is the mast. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- A simple sail glyph on a mast, nodding to "Sailer" without reusing any UCursos branding. -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3"
-        android:pathData="M54,26 L54,80" />
-    <path
-        android:fillColor="#F2A63A"
-        android:pathData="M54,30 L80,66 L54,66 Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,38 L34,66 L54,66 Z" />
-    <path
-        android:fillColor="#083E4A"
-        android:pathData="M34,80 L74,80 L64,90 L44,90 Z" />
+    <group android:scaleX="0.9" android:scaleY="0.9" android:translateX="25.2" android:translateY="25.6">
+        <path
+            android:fillColor="@color/sunsail"
+            android:pathData="M34,5C44,16 50,30 51,43H34Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M30,14C27,24 22,35 14,43H30Z" />
+        <path
+            android:fillColor="@color/foam"
+            android:pathData="M7,48H57C54,54 48,58 40,58H20C14,58 9,54 7,48Z" />
+    </group>
 </vector>

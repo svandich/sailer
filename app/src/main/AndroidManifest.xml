@@ -49,6 +49,12 @@
             android:theme="@style/Theme.Sailer.Scanner" />
 
         <activity
+            android:name=".ui.CalendarActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:theme="@style/Theme.Sailer" />
+
+        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"

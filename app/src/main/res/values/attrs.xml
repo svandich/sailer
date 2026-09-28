@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sailer's color tokens, beyond the Material ones (colorPrimary,
+         colorAccent, windowBackground). Code reads them through
+         ui/theme/Palette, never directly, so a user-built palette can later
+         replace these defaults in one place. See plan.md "Theming". -->
+    <attr name="sailerSurface" format="color" />
+    <attr name="sailerOnSurface" format="color" />
+    <attr name="sailerOnSurfaceMuted" format="color" />
+    <attr name="sailerOnAccent" format="color" />
+    <!-- The accent as text on the background: darker than the accent when that's light. -->
+    <attr name="sailerAccentText" format="color" />
+    <attr name="sailerDivider" format="color" />
+    <!-- Weekend / out-of-month shading. -->
+    <attr name="sailerStripe" format="color" />
+    <attr name="sailerWarnContainer" format="color" />
+    <attr name="sailerOnWarnContainer" format="color" />
+    <!-- The site's red "now" line. -->
+    <attr name="sailerNow" format="color" />
+</resources>
