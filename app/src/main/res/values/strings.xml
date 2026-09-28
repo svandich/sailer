@@ -47,4 +47,17 @@
     <string name="theme_focus_dark">Focus Oscuro</string>
     <string name="theme_classic">Claro</string>
     <string name="theme_classic_dark">Oscuro</string>
+    <string name="scanner_back">Volver</string>
+    <string name="scanner_switch_camera">Cambiar cámara</string>
+    <string name="scanner_present">Presentes</string>
+    <string name="scanner_hint">Escanea el código QR que cada estudiante tiene en Asistencias</string>
+    <string name="scanner_loading">Cargando la lista del curso…</string>
+    <string name="scanner_load_failed">No se pudo cargar la lista de asistencia.</string>
+    <string name="scanner_unknown">No aparece en la lista</string>
+    <string name="scanner_again">%1$s ya estaba registrado</string>
+    <string name="scanner_saved">Guardado</string>
+    <string name="scanner_sending">Enviando…</string>
+    <string name="scanner_no_permission">Para escanear los códigos QR de asistencia, Sailer necesita acceso a la cámara.</string>
+    <string name="scanner_grant">Permitir cámara</string>
+    <string name="scanner_no_camera">Este dispositivo no tiene una cámara disponible.</string>
 </resources>

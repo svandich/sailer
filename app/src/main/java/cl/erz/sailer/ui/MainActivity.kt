@@ -293,7 +293,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openSiteUrl(url: String) {
-        if (isUCursosUrl(url)) binding.webView.loadUrl(url)
+        if (AttendanceScannerActivity.isScannerUrl(url)) startActivity(AttendanceScannerActivity.intent(this, url))
+        else if (isUCursosUrl(url)) binding.webView.loadUrl(url)
     }
 
     // The site's search box (#widget_buscador), as a dialog.
@@ -448,6 +449,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun mainWebViewClient(): WebViewClient = object : WebViewClient() {
+        // The attendance page's "Comenzar!" opens the native QR scanner
+        // instead of the site's in-page one.
+        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+            val url = request.url.toString()
+            if (!request.isForMainFrame || !AttendanceScannerActivity.isScannerUrl(url)) return false
+            startActivity(AttendanceScannerActivity.intent(this@MainActivity, url))
+            return true
+        }
+
         // A <style> added this early also applies to the rest of the page as it's parsed.
         override fun onPageCommitVisible(view: WebView, url: String) {
             if (isUCursosUrl(url)) view.evaluateJavascript(HIDE_SITE_CHROME_JS, null)

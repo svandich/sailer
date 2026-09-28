@@ -7,4 +7,11 @@
     <color name="errorText">#C62828</color>
     <color name="bannerBackground">#FFF3CD</color>
     <color name="bannerText">#7A5B00</color>
+    <!-- AttendanceScannerActivity: always dark, over the camera. -->
+    <color name="scannerScrim">#66000000</color>
+    <color name="scannerSheet">#E6101416</color>
+    <color name="scannerOk">#2BB673</color>
+    <color name="scannerWrong">#E5484D</color>
+    <color name="scannerPending">#F2A63A</color>
+    <color name="scannerTextSecondary">#B3FFFFFF</color>
 </resources>

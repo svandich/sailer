@@ -3,9 +3,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- For u-cursos.cl pages that use the camera, like attendance QR scanning
-         (MainActivity grants it to the WebView). Optional, so devices
-         without a camera can still install the app. -->
+    <!-- For scanning attendance QR codes (AttendanceScannerActivity), and for
+         any other u-cursos.cl page that uses the camera (MainActivity grants
+         it to the WebView). Optional, so devices without a camera can still
+         install the app. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature
         android:name="android.hardware.camera.any"
@@ -39,6 +40,13 @@
             android:exported="false"
             android:theme="@style/Theme.Sailer"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- Not recreated on rotation: that would reload the attendance page. -->
+        <activity
+            android:name=".ui.AttendanceScannerActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false"
+            android:theme="@style/Theme.Sailer.Scanner" />
 
         <activity
             android:name=".ui.SettingsActivity"

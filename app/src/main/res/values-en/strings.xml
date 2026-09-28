@@ -45,4 +45,17 @@
     <string name="theme_focus_dark">Focus Dark</string>
     <string name="theme_classic">Light</string>
     <string name="theme_classic_dark">Dark</string>
+    <string name="scanner_back">Back</string>
+    <string name="scanner_switch_camera">Switch camera</string>
+    <string name="scanner_present">Present</string>
+    <string name="scanner_hint">Scan the QR code each student has in Attendance</string>
+    <string name="scanner_loading">Loading the course list…</string>
+    <string name="scanner_load_failed">Couldn\'t load the attendance list.</string>
+    <string name="scanner_unknown">Not on the list</string>
+    <string name="scanner_again">%1$s was already checked in</string>
+    <string name="scanner_saved">Saved</string>
+    <string name="scanner_sending">Sending…</string>
+    <string name="scanner_no_permission">To scan attendance QR codes, Sailer needs access to the camera.</string>
+    <string name="scanner_grant">Allow camera</string>
+    <string name="scanner_no_camera">This device has no camera available.</string>
 </resources>

@@ -12,3 +12,4 @@ app/build
 app/release
 *.apk
 *.aab
+/plan.md

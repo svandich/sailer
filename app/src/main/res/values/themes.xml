@@ -7,4 +7,13 @@
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor" tools:targetApi="l">@color/colorPrimaryDark</item>
     </style>
+
+    <!-- Full-screen camera: drawn behind transparent system bars, always dark. -->
+    <style name="Theme.Sailer.Scanner" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 </resources>
